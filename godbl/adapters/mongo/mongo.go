@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 
+	godblResource "github.com/gauravsarma1992/godbl/godbl/resource"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/gauravsarma1992/godbl/godbl"
 	"github.com/gauravsarma1992/gostructs"
 )
 
@@ -38,12 +37,21 @@ func NewMongoDb(ctx context.Context, config *MongoConfig) (db *MongoDb, err erro
 		config: config,
 	}
 	if config == nil {
-		if db.config, err = NewMongoConfig("config.json"); err != nil {
+		if db.config, err = DefaultMongoConfig(); err != nil {
 			return
 		}
 	}
 	if err = db.Setup(); err != nil {
 		return
+	}
+	return
+}
+
+func DefaultMongoConfig() (mongoConfig *MongoConfig, err error) {
+	mongoConfig = &MongoConfig{
+		Host:   "localhost",
+		Port:   "27017",
+		DbName: "dev",
 	}
 	return
 }
@@ -54,22 +62,11 @@ func NewMongoConfig(fileName string) (mongoConfig *MongoConfig, err error) {
 	)
 	mongoConfig = &MongoConfig{}
 	if fileB, err = ioutil.ReadFile(fileName); err != nil {
-		log.Println("Error reading config file", err)
+		return
 	}
 	if err = json.Unmarshal(fileB, mongoConfig); err != nil {
-		log.Println("Error unmarshalling config file", err)
+		return
 	}
-	if mongoConfig.Host == "" {
-		mongoConfig.Host = "localhost"
-	}
-	if mongoConfig.Port == "" {
-		mongoConfig.Port = "27017"
-	}
-	if mongoConfig.DbName == "" {
-		mongoConfig.DbName = "dev"
-	}
-	err = nil
-
 	return
 }
 
@@ -110,7 +107,7 @@ func (db *MongoDb) Setup() (err error) {
 	return
 }
 
-func (db *MongoDb) convertToBson(resource godbl.Resource) (bsonResource bson.M) {
+func (db *MongoDb) convertToBson(resource godblResource.Resource) (bsonResource bson.M) {
 	bsonResource = bson.M{}
 	for resKey, resVal := range resource.Attributes {
 		bsonResource[resKey] = resVal
@@ -118,8 +115,8 @@ func (db *MongoDb) convertToBson(resource godbl.Resource) (bsonResource bson.M) 
 	return
 }
 
-func (db *MongoDb) convertToResource(bsonResource bson.M, name string) (resource godbl.Resource) {
-	resource = godbl.Resource(&gostructs.DecodedResult{})
+func (db *MongoDb) convertToResource(bsonResource bson.M, name string) (resource godblResource.Resource) {
+	resource = godblResource.Resource(&gostructs.DecodedResult{})
 	resource.Name = name
 	resource.Attributes = make(map[string]interface{})
 	for resKey, resVal := range bsonResource {
@@ -128,8 +125,8 @@ func (db *MongoDb) convertToResource(bsonResource bson.M, name string) (resource
 	return
 }
 
-func (db *MongoDb) copyResourceToResult(resource godbl.Resource) (result godbl.Resource) {
-	result = godbl.Resource(&gostructs.DecodedResult{})
+func (db *MongoDb) copyResourceToResult(resource godblResource.Resource) (result godblResource.Resource) {
+	result = godblResource.Resource(&gostructs.DecodedResult{})
 	result.Name = resource.Name
 	result.Attributes = make(map[string]interface{})
 	for resKey, resVal := range resource.Attributes {
@@ -138,7 +135,7 @@ func (db *MongoDb) copyResourceToResult(resource godbl.Resource) (result godbl.R
 	return
 }
 
-func (db *MongoDb) InsertOne(resource godbl.Resource) (result godbl.Resource, err error) {
+func (db *MongoDb) InsertOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	var (
 		insertResult *mongo.InsertOneResult
 	)
@@ -152,8 +149,8 @@ func (db *MongoDb) InsertOne(resource godbl.Resource) (result godbl.Resource, er
 	return
 }
 
-func (db *MongoDb) FindOne(resource godbl.Resource) (result godbl.Resource, err error) {
-	result = godbl.Resource(&gostructs.DecodedResult{})
+func (db *MongoDb) FindOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
+	result = godblResource.Resource(&gostructs.DecodedResult{})
 	result.Name = resource.Name
 	currCollection := db.db.Collection(resource.Name)
 
@@ -163,7 +160,7 @@ func (db *MongoDb) FindOne(resource godbl.Resource) (result godbl.Resource, err 
 	return
 }
 
-func (db *MongoDb) DeleteOne(resource godbl.Resource) (result godbl.Resource, err error) {
+func (db *MongoDb) DeleteOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	currCollection := db.db.Collection(resource.Name)
 	if _, err = currCollection.DeleteOne(db.ctx, db.convertToBson(resource)); err != nil {
 		return
@@ -171,16 +168,15 @@ func (db *MongoDb) DeleteOne(resource godbl.Resource) (result godbl.Resource, er
 	return
 }
 
-func (db *MongoDb) UpdateOne(resource godbl.Resource) (result godbl.Resource, err error) {
+func (db *MongoDb) UpdateOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	currCollection := db.db.Collection(resource.Name)
-	log.Println("in update one", resource, currCollection.Name())
 	if _, err = currCollection.UpdateOne(db.ctx, bson.M{"_id": resource.Attributes["_id"]}, bson.M{"$set": db.convertToBson(resource)}); err != nil {
 		return
 	}
 	return
 }
 
-func (db *MongoDb) FindMany(resource godbl.Resource) (results []godbl.Resource, err error) {
+func (db *MongoDb) FindMany(resource godblResource.Resource) (results []godblResource.Resource, err error) {
 	var (
 		cursor      *mongo.Cursor
 		bsonResults []bson.M
@@ -199,14 +195,14 @@ func (db *MongoDb) FindMany(resource godbl.Resource) (results []godbl.Resource, 
 	return
 }
 
-func (db *MongoDb) InsertMany(resources []godbl.Resource) (results []godbl.Resource, err error) {
+func (db *MongoDb) InsertMany(resources []godblResource.Resource) (results []godblResource.Resource, err error) {
 	return
 }
 
-func (db *MongoDb) UpdateMany(resources []godbl.Resource) (results []godbl.Resource, err error) {
+func (db *MongoDb) UpdateMany(resources []godblResource.Resource) (results []godblResource.Resource, err error) {
 	return
 }
 
-func (db *MongoDb) DeleteMany(resources []godbl.Resource) (results []godbl.Resource, err error) {
+func (db *MongoDb) DeleteMany(resources []godblResource.Resource) (results []godblResource.Resource, err error) {
 	return
 }

@@ -3,33 +3,18 @@ package godbl
 import (
 	"context"
 
-	"github.com/gauravsarma1992/gostructs"
+	"github.com/gauravsarma1992/godbl/godbl/resource"
 )
 
 type (
 	Godbl struct {
-		Db Db
-	}
-
-	Resource *gostructs.DecodedResult
-
-	Db interface {
-		Setup() error
-		InsertOne(Resource) (Resource, error)
-		FindOne(Resource) (Resource, error)
-		DeleteOne(Resource) (Resource, error)
-		UpdateOne(Resource) (Resource, error)
-
-		FindMany(Resource) ([]Resource, error)
-		InsertMany([]Resource) ([]Resource, error)
-		UpdateMany([]Resource) ([]Resource, error)
-		DeleteMany([]Resource) ([]Resource, error)
+		Db resource.Db
 	}
 
 	CompliantDb struct{}
 )
 
-func NewDb(ctx context.Context, db Db) (dbl *Godbl, err error) {
+func NewDb(ctx context.Context, db resource.Db) (dbl *Godbl, err error) {
 	dbl = &Godbl{
 		Db: db,
 	}
@@ -43,34 +28,34 @@ func (cdb *CompliantDb) Setup() error {
 	return nil
 }
 
-func (cdb *CompliantDb) InsertOne(resource Resource) (result Resource, err error) {
+func (cdb *CompliantDb) InsertOne(resource resource.Resource) (result resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) FindOne(resource Resource) (result Resource, err error) {
+func (cdb *CompliantDb) FindOne(resource resource.Resource) (result resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) DeleteOne(resource Resource) (result Resource, err error) {
+func (cdb *CompliantDb) DeleteOne(resource resource.Resource) (result resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) UpdateOne(resource Resource) (result Resource, err error) {
+func (cdb *CompliantDb) UpdateOne(resource resource.Resource) (result resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) FindMany(resource Resource) (results []Resource, err error) {
+func (cdb *CompliantDb) FindMany(resource resource.Resource) (results []resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) InsertMany(resources []Resource) (results []Resource, err error) {
+func (cdb *CompliantDb) InsertMany(resources []resource.Resource) (results []resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) UpdateMany(resources []Resource) (results []Resource, err error) {
+func (cdb *CompliantDb) UpdateMany(resources []resource.Resource) (results []resource.Resource, err error) {
 	return
 }
 
-func (cdb *CompliantDb) DeleteMany(resources []Resource) (results []Resource, err error) {
+func (cdb *CompliantDb) DeleteMany(resources []resource.Resource) (results []resource.Resource, err error) {
 	return
 }
