@@ -8,6 +8,7 @@ import (
 
 	godblResource "github.com/gauravsarma1992/godbl/godbl/resource"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -115,6 +116,22 @@ func (db *MongoDb) convertToBson(resource godblResource.Resource) (bsonResource 
 	return
 }
 
+func (db *MongoDb) convertPrimaryKeyForDb(resource godblResource.Resource) (bsonResource bson.M) {
+	var (
+		objectID          primitive.ObjectID
+		convertedResource godblResource.Resource
+	)
+	convertedResource = db.copyResourceToResult(resource)
+
+	objectID, _ = primitive.ObjectIDFromHex(convertedResource.Attributes["id"].(string))
+	convertedResource.Attributes = make(map[string]interface{})
+	convertedResource.Attributes["_id"] = objectID
+
+	bsonResource = db.convertToBson(convertedResource)
+
+	return
+}
+
 func (db *MongoDb) convertToResource(bsonResource bson.M, name string) (resource godblResource.Resource) {
 	resource = godblResource.Resource(&gostructs.DecodedResult{})
 	resource.Name = name
@@ -150,11 +167,12 @@ func (db *MongoDb) InsertOne(resource godblResource.Resource) (result godblResou
 }
 
 func (db *MongoDb) FindOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
-	result = godblResource.Resource(&gostructs.DecodedResult{})
-	result.Name = resource.Name
 	currCollection := db.db.Collection(resource.Name)
 
-	if err = currCollection.FindOne(context.TODO(), db.convertToBson(resource)).Decode(&result.Attributes); err != nil {
+	result = godblResource.Resource(&gostructs.DecodedResult{})
+	result.Name = resource.Name
+
+	if err = currCollection.FindOne(context.TODO(), db.convertPrimaryKeyForDb(resource)).Decode(&result.Attributes); err != nil {
 		return
 	}
 	return
@@ -162,7 +180,7 @@ func (db *MongoDb) FindOne(resource godblResource.Resource) (result godblResourc
 
 func (db *MongoDb) DeleteOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	currCollection := db.db.Collection(resource.Name)
-	if _, err = currCollection.DeleteOne(db.ctx, db.convertToBson(resource)); err != nil {
+	if _, err = currCollection.DeleteOne(db.ctx, db.convertPrimaryKeyForDb(resource)); err != nil {
 		return
 	}
 	return
@@ -170,7 +188,8 @@ func (db *MongoDb) DeleteOne(resource godblResource.Resource) (result godblResou
 
 func (db *MongoDb) UpdateOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	currCollection := db.db.Collection(resource.Name)
-	if _, err = currCollection.UpdateOne(db.ctx, bson.M{"_id": resource.Attributes["_id"]}, bson.M{"$set": db.convertToBson(resource)}); err != nil {
+	bsonResource := db.convertPrimaryKeyForDb(resource)
+	if _, err = currCollection.UpdateOne(db.ctx, bsonResource, bson.M{"$set": db.convertToBson(resource)}); err != nil {
 		return
 	}
 	return

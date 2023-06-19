@@ -2,6 +2,8 @@ module github.com/gauravsarma1992/godbl
 
 go 1.20
 
+replace github.com/gauravsarma1992/gostructs => /Users/gsarma/Work/github-projects/gostructs
+
 require (
 	github.com/gauravsarma1992/gostructs v0.0.0-20230616172933-f3fbeecd7e4b
 	github.com/stretchr/testify v1.8.4

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gauravsarma1992/gostructs"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetTestResource() (resource *gostructs.DecodedResult) {
@@ -47,8 +48,16 @@ func TestMongoInsert(t *testing.T) {
 func TestMongoInsertAndFindOne(t *testing.T) {
 	resource := GetTestResource()
 	mongodb, _ := GetTestMongoDb()
-	_, err := mongodb.InsertOne(resource)
-	findResult, err := mongodb.FindOne(resource)
+	resource, err := mongodb.InsertOne(resource)
+
+	findResource := &gostructs.DecodedResult{
+		Attributes: make(map[string]interface{}),
+	}
+	findResource.Name = resource.Name
+	findResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+
+	findResult, err := mongodb.FindOne(findResource)
+
 	assert.Nil(t, err)
 	assert.NotNil(t, findResult.Attributes["_id"])
 }
@@ -69,26 +78,41 @@ func TestMongoUpdate(t *testing.T) {
 	resource := GetTestResource()
 
 	mongodb, _ := GetTestMongoDb()
-	mongodb.InsertOne(resource)
+	resource, _ = mongodb.InsertOne(resource)
 
-	findResult, _ := mongodb.FindOne(resource)
-	assert.Equal(t, "b", findResult.Attributes["a"])
+	updateResource := &gostructs.DecodedResult{
+		Attributes: make(map[string]interface{}),
+	}
+	updateResource.Name = resource.Name
+	updateResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
 
-	findResult.Attributes["a"] = "c"
-	_, err := mongodb.UpdateOne(findResult)
+	updateResource.Attributes["a"] = "c"
+	_, err := mongodb.UpdateOne(updateResource)
+
 	assert.Nil(t, err)
 
-	findResult, _ = mongodb.FindOne(findResult)
-	assert.Equal(t, "c", findResult.Attributes["a"])
+	findResource := &gostructs.DecodedResult{
+		Name:       resource.Name,
+		Attributes: make(map[string]interface{}),
+	}
+	findResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+	findResource, _ = mongodb.FindOne(findResource)
+	assert.Equal(t, "c", findResource.Attributes["a"])
 }
 
 func TestMongoDelete(t *testing.T) {
 	resource := GetTestResource()
 
 	mongodb, _ := GetTestMongoDb()
-	mongodb.InsertOne(resource)
+	resource, _ = mongodb.InsertOne(resource)
 
-	_, err := mongodb.DeleteOne(resource)
+	deleteResource := &gostructs.DecodedResult{
+		Attributes: make(map[string]interface{}),
+	}
+	deleteResource.Name = resource.Name
+	deleteResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+
+	_, err := mongodb.DeleteOne(deleteResource)
 	assert.Nil(t, err)
 
 	findResult, _ := mongodb.FindMany(resource)
