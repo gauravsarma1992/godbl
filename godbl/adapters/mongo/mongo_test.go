@@ -6,7 +6,6 @@ import (
 
 	"github.com/gauravsarma1992/gostructs"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetTestResource() (resource *gostructs.DecodedResult) {
@@ -42,7 +41,7 @@ func TestMongoInsert(t *testing.T) {
 	mongodb, err := GetTestMongoDb()
 	result, err := mongodb.InsertOne(resource)
 	assert.Nil(t, err)
-	assert.NotEmptyf(t, result.Attributes["_id"], "ID is empty")
+	assert.NotEmptyf(t, result.Attributes["id"], "ID is empty")
 }
 
 func TestMongoInsertAndFindOne(t *testing.T) {
@@ -54,7 +53,7 @@ func TestMongoInsertAndFindOne(t *testing.T) {
 		Attributes: make(map[string]interface{}),
 	}
 	findResource.Name = resource.Name
-	findResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+	findResource.Attributes["id"] = resource.Attributes["id"]
 
 	findResult, err := mongodb.FindOne(findResource)
 
@@ -84,7 +83,7 @@ func TestMongoUpdate(t *testing.T) {
 		Attributes: make(map[string]interface{}),
 	}
 	updateResource.Name = resource.Name
-	updateResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+	updateResource.Attributes["id"] = resource.Attributes["id"]
 
 	updateResource.Attributes["a"] = "c"
 	_, err := mongodb.UpdateOne(updateResource)
@@ -95,7 +94,7 @@ func TestMongoUpdate(t *testing.T) {
 		Name:       resource.Name,
 		Attributes: make(map[string]interface{}),
 	}
-	findResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+	findResource.Attributes["id"] = resource.Attributes["id"]
 	findResource, _ = mongodb.FindOne(findResource)
 	assert.Equal(t, "c", findResource.Attributes["a"])
 }
@@ -110,7 +109,7 @@ func TestMongoDelete(t *testing.T) {
 		Attributes: make(map[string]interface{}),
 	}
 	deleteResource.Name = resource.Name
-	deleteResource.Attributes["id"] = resource.Attributes["_id"].(primitive.ObjectID).Hex()
+	deleteResource.Attributes["id"] = resource.Attributes["id"]
 
 	_, err := mongodb.DeleteOne(deleteResource)
 	assert.Nil(t, err)

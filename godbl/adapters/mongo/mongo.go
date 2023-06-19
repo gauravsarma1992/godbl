@@ -108,50 +108,6 @@ func (db *MongoDb) Setup() (err error) {
 	return
 }
 
-func (db *MongoDb) convertToBson(resource godblResource.Resource) (bsonResource bson.M) {
-	bsonResource = bson.M{}
-	for resKey, resVal := range resource.Attributes {
-		bsonResource[resKey] = resVal
-	}
-	return
-}
-
-func (db *MongoDb) convertPrimaryKeyForDb(resource godblResource.Resource) (bsonResource bson.M) {
-	var (
-		objectID          primitive.ObjectID
-		convertedResource godblResource.Resource
-	)
-	convertedResource = db.copyResourceToResult(resource)
-
-	objectID, _ = primitive.ObjectIDFromHex(convertedResource.Attributes["id"].(string))
-	convertedResource.Attributes = make(map[string]interface{})
-	convertedResource.Attributes["_id"] = objectID
-
-	bsonResource = db.convertToBson(convertedResource)
-
-	return
-}
-
-func (db *MongoDb) convertToResource(bsonResource bson.M, name string) (resource godblResource.Resource) {
-	resource = godblResource.Resource(&gostructs.DecodedResult{})
-	resource.Name = name
-	resource.Attributes = make(map[string]interface{})
-	for resKey, resVal := range bsonResource {
-		resource.Attributes[resKey] = resVal
-	}
-	return
-}
-
-func (db *MongoDb) copyResourceToResult(resource godblResource.Resource) (result godblResource.Resource) {
-	result = godblResource.Resource(&gostructs.DecodedResult{})
-	result.Name = resource.Name
-	result.Attributes = make(map[string]interface{})
-	for resKey, resVal := range resource.Attributes {
-		result.Attributes[resKey] = resVal
-	}
-	return
-}
-
 func (db *MongoDb) InsertOne(resource godblResource.Resource) (result godblResource.Resource, err error) {
 	var (
 		insertResult *mongo.InsertOneResult
@@ -160,9 +116,8 @@ func (db *MongoDb) InsertOne(resource godblResource.Resource) (result godblResou
 	if insertResult, err = currCollection.InsertOne(db.ctx, db.convertToBson(resource)); err != nil {
 		return
 	}
-	result = &gostructs.DecodedResult{}
 	result = db.copyResourceToResult(resource)
-	result.Attributes["_id"] = insertResult.InsertedID
+	result.Attributes["id"] = insertResult.InsertedID.(primitive.ObjectID).Hex()
 	return
 }
 
