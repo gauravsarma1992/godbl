@@ -44,7 +44,7 @@ func TestMongoInsert(t *testing.T) {
 	assert.NotEmptyf(t, result.Attributes["_id"], "ID is empty")
 }
 
-func TestMongoInsertAndFineOne(t *testing.T) {
+func TestMongoInsertAndFindOne(t *testing.T) {
 	resource := GetTestResource()
 	mongodb, _ := GetTestMongoDb()
 	_, err := mongodb.InsertOne(resource)
@@ -53,7 +53,7 @@ func TestMongoInsertAndFineOne(t *testing.T) {
 	assert.NotNil(t, findResult.Attributes["_id"])
 }
 
-func TestMongoInsertAndFineMany(t *testing.T) {
+func TestMongoInsertAndFindMany(t *testing.T) {
 	resource := GetTestResource()
 	mongodb, _ := GetTestMongoDb()
 	for idx := 0; idx < 10; idx++ {
@@ -63,4 +63,34 @@ func TestMongoInsertAndFineMany(t *testing.T) {
 	findResult, err := mongodb.FindMany(resource)
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(findResult))
+}
+
+func TestMongoUpdate(t *testing.T) {
+	resource := GetTestResource()
+
+	mongodb, _ := GetTestMongoDb()
+	mongodb.InsertOne(resource)
+
+	findResult, _ := mongodb.FindOne(resource)
+	assert.Equal(t, "b", findResult.Attributes["a"])
+
+	findResult.Attributes["a"] = "c"
+	_, err := mongodb.UpdateOne(findResult)
+	assert.Nil(t, err)
+
+	findResult, _ = mongodb.FindOne(findResult)
+	assert.Equal(t, "c", findResult.Attributes["a"])
+}
+
+func TestMongoDelete(t *testing.T) {
+	resource := GetTestResource()
+
+	mongodb, _ := GetTestMongoDb()
+	mongodb.InsertOne(resource)
+
+	_, err := mongodb.DeleteOne(resource)
+	assert.Nil(t, err)
+
+	findResult, _ := mongodb.FindMany(resource)
+	assert.Equal(t, 0, len(findResult))
 }

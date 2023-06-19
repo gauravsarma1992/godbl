@@ -154,14 +154,10 @@ func (db *MongoDb) InsertOne(resource godbl.Resource) (result godbl.Resource, er
 
 func (db *MongoDb) FindOne(resource godbl.Resource) (result godbl.Resource, err error) {
 	result = godbl.Resource(&gostructs.DecodedResult{})
-	singleResult := &mongo.SingleResult{}
+	result.Name = resource.Name
 	currCollection := db.db.Collection(resource.Name)
-	opts := options.FindOne()
-	if singleResult = currCollection.FindOne(context.TODO(), db.convertToBson(resource), opts); singleResult.Err() != nil {
-		err = singleResult.Err()
-		return
-	}
-	if err = singleResult.Decode(&result.Attributes); err != nil {
+
+	if err = currCollection.FindOne(context.TODO(), db.convertToBson(resource)).Decode(&result.Attributes); err != nil {
 		return
 	}
 	return
@@ -177,7 +173,8 @@ func (db *MongoDb) DeleteOne(resource godbl.Resource) (result godbl.Resource, er
 
 func (db *MongoDb) UpdateOne(resource godbl.Resource) (result godbl.Resource, err error) {
 	currCollection := db.db.Collection(resource.Name)
-	if _, err = currCollection.UpdateOne(db.ctx, bson.M{"_id": resource.Attributes["_id"]}, db.convertToBson(resource)); err != nil {
+	log.Println("in update one", resource, currCollection.Name())
+	if _, err = currCollection.UpdateOne(db.ctx, bson.M{"_id": resource.Attributes["_id"]}, bson.M{"$set": db.convertToBson(resource)}); err != nil {
 		return
 	}
 	return
