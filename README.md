@@ -12,6 +12,7 @@ way forward to store golang objects in a database.
 - Pagination constructs
 - Connection pooling
 - Migration handlers
+- Callback handlers
 
 ### Adapters
 - MongoDB
